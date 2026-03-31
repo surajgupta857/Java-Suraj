@@ -1,0 +1,309 @@
+import java.util.List;
+import java.util.Scanner;
+
+public class Main {
+    private static Scanner scanner = new Scanner(System.in);
+    public static void main(String[] args) {
+        String dataPath = "data/notes.txt";
+        Storage storage = new Storage(dataPath);
+        NoteManager manager = new NoteManager(storage);
+
+        while (true) {
+            showMenu();
+            String choice = scanner.nextLine().trim();
+            switch (choice) {
+                case "1":
+                    addNote(manager);
+                    break;
+                case "2":
+                    listNotes(manager);
+                    break;
+                case "3":
+                    viewNote(manager);
+                    break;
+                case "4":
+                    editNote(manager);
+                    break;
+                case "5":
+                    deleteNote(manager);
+                    break;
+                case "6":
+                    searchNotes(manager);
+                    break;
+                case "7":
+                    filterByCategory(manager);
+                    break;
+                case "0":
+                    System.out.println("Exiting. Goodbye!");
+                    System.exit(0);
+                default:
+                    System.out.println("Invalid choice. Try again.");
+            }
+        }
+    }
+
+    private static void showMenu() {
+        System.out.println("\n=== Notes Management System ===");
+        System.out.println("1. Add Note");
+        System.out.println("2. List All Notes");
+        System.out.println("3. View Note (by ID)");
+        System.out.println("4. Edit Note");
+        System.out.println("5. Delete Note");
+        System.out.println("6. Search Notes");
+        System.out.println("7. Filter by Category");
+        System.out.println("0. Exit");
+        System.out.print("Enter choice: ");
+    }
+
+    private static void addNote(NoteManager manager) {
+        System.out.print("Title: ");
+        String title = scanner.nextLine();
+        System.out.print("Category: ");
+        String category = scanner.nextLine();
+        System.out.println("Content (end with a single line containing only 'END'): ");
+        StringBuilder content = new StringBuilder();
+        while (true) {
+            String line = scanner.nextLine();
+            if (line.equals("END")) break;
+            content.append(line).append("\n");
+        }
+        Note n = manager.addNote(title, content.toString().trim(), category);
+        System.out.println("Note added with ID: " + n.getId());
+    }
+
+    private static void listNotes(NoteManager manager) {
+        List<Note> notes = manager.listNotes();
+        if (notes.isEmpty()) {
+            System.out.println("No notes found.");
+            return;
+        }
+        System.out.println("\n--- All Notes ---");
+        for (Note n : notes) {
+            System.out.println("ID: " + n.getId() + " | Title: " + n.getTitle() + " | Category: " + n.getCategory() + " | Time: " + n.getTimestamp());
+        }
+    }
+
+    private static void viewNote(NoteManager manager) {
+        System.out.print("Enter note ID: ");
+        int id = Integer.parseInt(scanner.nextLine());
+        List<Note> notes = manager.listNotes();
+        notes.stream().filter(n -> n.getId() == id).findFirst().ifPresentOrElse(
+            n -> System.out.println("\n" + n),
+            () -> System.out.println("Note not found.")
+        );
+    }
+
+    private static void editNote(NoteManager manager) {
+        System.out.print("Enter note ID to edit: ");
+        int id = Integer.parseInt(scanner.nextLine());
+        System.out.print("New Title: ");
+        String title = scanner.nextLine();
+        System.out.print("New Category: ");
+        String category = scanner.nextLine();
+        System.out.println("New Content (end with a single line containing only 'END'):");
+        StringBuilder content = new StringBuilder();
+        while (true) {
+            String line = scanner.nextLine();
+            if (line.equals("END")) break;
+            content.append(line).append("\n");
+        }
+        boolean ok = manager.editNote(id, title, content.toString().trim(), category);
+        System.out.println(ok ? "Note updated." : "Note not found.");
+    }
+
+    private static void deleteNote(NoteManager manager) {
+        System.out.print("Enter note ID to delete: ");
+        int id = Integer.parseInt(scanner.nextLine());
+        boolean ok = manager.deleteNote(id);
+        System.out.println(ok ? "Note deleted." : "Note not found.");
+    }
+
+    private static void searchNotes(NoteManager manager) {
+        System.out.print("Enter keyword to search: ");
+        String kw = scanner.nextLine();
+        List<Note> results = manager.searchNotes(kw);
+        if (results.isEmpty()) {
+            System.out.println("No results.");
+        } else {
+            System.out.println("\n--- Search Results ---");
+            for (Note n : results) {
+                System.out.println(n.getId() + " | " + n.getTitle() + " | " + n.getCategory());
+            }
+        }
+    }
+
+    private static void filterByCategory(NoteManager manager) {
+        System.out.print("Enter category: ");
+        String cat = scanner.nextLine();
+        List<Note> results = manager.filterByCategory(cat);
+        if (results.isEmpty()) {
+            System.out.println("No notes in this category.");
+        } else {
+            System.out.println("\n--- Notes in Category: " + cat + " ---");
+            for (Note n : results) {
+                System.out.println(n.getId() + " | " + n.getTitle() + " | " + n.getTimestamp());
+            }
+        }
+    }
+
+    import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+
+public class Note {
+    private int id;
+    private String title;
+    private String content;
+    private String category;
+    private String timestamp;
+
+    public Note(int id, String title, String content, String category) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.category = category;
+        this.timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    public Note(int id, String title, String content, String category, String timestamp) {
+        this.id = id;
+        this.title = title;
+        this.content = content;
+        this.category = category;
+        this.timestamp = timestamp;
+    }
+
+    public int getId() { return id; }
+    public String getTitle() { return title; }
+    public String getContent() { return content; }
+    public String getCategory() { return category; }
+    public String getTimestamp() { return timestamp; }
+
+    public void setTitle(String title) { this.title = title; }
+    public void setContent(String content) { this.content = content; }
+    public void setCategory(String category) { this.category = category; }
+
+    @Override
+    public String toString() {
+        return "ID: " + id + "\nTitle: " + title + "\nCategory: " + category + "\nTime: " + timestamp + "\nContent:\n" + content;
+    }
+}
+
+import java.util.*;
+import java.util.stream.Collectors;
+
+public class NoteManager {
+    private List<Note> notes;
+    private Storage storage;
+    private int nextId;
+
+    public NoteManager(Storage storage) {
+        this.storage = storage;
+        this.notes = storage.loadNotes();
+        this.nextId = notes.stream().mapToInt(Note::getId).max().orElse(0) + 1;
+    }
+
+    public Note addNote(String title, String content, String category) {
+        Note n = new Note(nextId++, title, content, category);
+        notes.add(n);
+        storage.saveNotes(notes);
+        return n;
+    }
+
+    public boolean editNote(int id, String newTitle, String newContent, String newCategory) {
+        Optional<Note> o = notes.stream().filter(n -> n.getId() == id).findFirst();
+        if (o.isPresent()) {
+            Note n = o.get();
+            n.setTitle(newTitle);
+            n.setContent(newContent);
+            n.setCategory(newCategory);
+            storage.saveNotes(notes);
+            return true;
+        }
+        return false;
+    }
+
+    public boolean deleteNote(int id) {
+        boolean removed = notes.removeIf(n -> n.getId() == id);
+        if (removed) storage.saveNotes(notes);
+        return removed;
+    }
+
+    public List<Note> listNotes() {
+        return new ArrayList<>(notes);
+    }
+
+    public List<Note> searchNotes(String keyword) {
+        String k = keyword.toLowerCase();
+        return notes.stream()
+                .filter(n -> n.getTitle().toLowerCase().contains(k) || n.getContent().toLowerCase().contains(k) || n.getCategory().toLowerCase().contains(k))
+                .collect(Collectors.toList());
+    }
+
+    public List<Note> filterByCategory(String category) {
+        String c = category.toLowerCase();
+        return notes.stream().filter(n -> n.getCategory().toLowerCase().equals(c)).collect(Collectors.toList());
+    }
+}
+
+import java.io.*;
+import java.util.*;
+import java.nio.file.*;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
+import java.util.regex.Pattern;
+
+public class Storage {
+    private Path filePath;
+    private static final String SEP = "|||"; // field separator
+
+    public Storage(String path) {
+        this.filePath = Paths.get(path);
+        try {
+            if (!Files.exists(filePath.getParent())) {
+                Files.createDirectories(filePath.getParent());
+            }
+            if (!Files.exists(filePath)) {
+                Files.createFile(filePath);
+            }
+        } catch (IOException e) {
+            System.err.println("Error initializing storage: " + e.getMessage());
+        }
+    }
+
+    public List<Note> loadNotes() {
+        List<Note> list = new ArrayList<>();
+        try (BufferedReader br = Files.newBufferedReader(filePath)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                // Each line: id|||title|||category|||timestamp|||content (content may have escaped newlines as \n)
+                String[] parts = line.split(Pattern.quote(SEP), 5);
+                if (parts.length >= 5) {
+                    int id = Integer.parseInt(parts[0]);
+                    String title = parts[1];
+                    String category = parts[2];
+                    String timestamp = parts[3];
+                    String content = parts[4].replace("\\n", "\n");
+                    list.add(new Note(id, title, content, category, timestamp));
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading notes: " + e.getMessage());
+        }
+        return list;
+    }
+
+    public void saveNotes(List<Note> notes) {
+        try (BufferedWriter bw = Files.newBufferedWriter(filePath, StandardOpenOption.TRUNCATE_EXISTING)) {
+            for (Note n : notes) {
+                String safeContent = n.getContent().replace("\n", "\\n");
+                // id|||title|||category|||timestamp|||content
+                String line = n.getId() + SEP + n.getTitle() + SEP + n.getCategory() + SEP + n.getTimestamp() + SEP + safeContent;
+                bw.write(line);
+                bw.newLine();
+            }
+        } catch (IOException e) {
+            System.err.println("Error saving notes: " + e.getMessage());
+        }
+    }
+}
+}
